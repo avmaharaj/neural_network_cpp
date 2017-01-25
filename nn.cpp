@@ -22,20 +22,23 @@
 
 // Constants 
 const int NUMINPUTNODES = 2; 
-const int NUMHIDDENNODES = 2; 
+const int NUMHIDDENNODES = 5; 
 const int NUMOUTPUTNODES = 1; 
 const int NUMNODES = NUMINPUTNODES + NUMHIDDENNODES + NUMOUTPUTNODES; 
 const int ARRAYSIZE = NUMNODES + 1; // 1-offset to match “node 1” “node
 const int MAXITERATIONS = 131072;
 const double E=2.71828;
-const double LEARNINGRATE=0.3;
+const double PI=3.14159;
+const double LEARNINGRATE=0.5;
 
 // Function prototypes
 void initialize( double[][ ARRAYSIZE], double[], double[], double[]); 
 void connectNodes( double[][ ARRAYSIZE], double[]); 
 void trainingExampleXOR( double[], double[]); 
 void trainingExampleOR( double[], double[]); 
+void trainingExampleSinxSiny( double[], double[], double, double); 
 void forwardPass( double[][ ARRAYSIZE], double[], double[]); 
+void testNetwork( double[][ ARRAYSIZE], double[], double[]); 
 double backwardPass( double[][ ARRAYSIZE], double[], double[], double[]); 
 double sigmoidForward(double);
 double reluForward(double);
@@ -58,12 +61,20 @@ int main(){
 	int counter = 0;
 	while(counter < MAXITERATIONS)
 	{	
-		trainingExampleXOR(values, expectedvalues);
+		//trainingExampleXOR(values, expectedvalues);
+		
+		//Following code simulates a 2d function which we will try to learn
+		double rvalx = ((double) rand()/(RAND_MAX));
+		double rvaly = ((double) rand()/(RAND_MAX));
+		trainingExampleSinxSiny(values, expectedvalues, rvalx, rvaly);
+
 		forwardPass(weights,values,thresholds);
 		double sumOfSquaredErrors = backwardPass(weights, values, expectedvalues, thresholds);
 		displayNetwork(values,sumOfSquaredErrors);
 		counter++;
 	}
+
+	testNetwork(weights,values,thresholds);
 
 	return 0;
 
@@ -97,9 +108,9 @@ void connectNodes(double weights[][ARRAYSIZE], double thresholds[])
 
 	}
 
-	thresholds[3] = rand()/(double)rand();
-	thresholds[4] = rand()/(double)rand();
-	thresholds[5] = rand()/(double)rand();
+	for (int x=1+NUMINPUTNODES; x < ARRAYSIZE; x++){
+		thresholds[x] = rand()/(double)rand();
+		}
 
 	printf("%f%f%f%f%f%f\n%f%f%f\n",
 		weights[1][3],weights[1][4],weights[2][3],
@@ -140,6 +151,14 @@ void trainingExampleXOR( double values[], double expectedvalues[])
 	counter++;
 }
 
+void trainingExampleSinxSiny( double values[], double expectedvalues[], double randvalx, double randvaly)
+{
+	
+		values[1] = randvalx;
+		values[2] = randvaly;
+		expectedvalues[NUMNODES] =0.5*(sin(PI*values[1])+sin(PI*values[2]));
+
+}
 
 
 void trainingExampleOR( double values[], double expectedvalues[])
@@ -254,17 +273,48 @@ double backwardPass(double weights[][ARRAYSIZE], double values[],
 	return sumOfSquaredErrors;
 }
 
+
 void displayNetwork(double values[], double sumOfSquaredErrors)
 {
 	static int counter = 0;
-	if((counter%4) == 0)
+	/*
+	if (counter%100 == 0){
 		printf("----------------------------------------------\n");
-	printf("%8.4f|",values[1]);
-	printf("%8.4f|",values[2]);
-	printf("%8.4f|",values[5]);
-	printf(" err.%8.5f\n", sumOfSquaredErrors);
+		printf("%8.4f|",values[1]);
+		printf("%8.4f|",values[2]);
+		printf("%8.4f|",values[5]);
+		printf(" err.%8.5f\n", sumOfSquaredErrors);
+
+	}
 	counter++;
+	*/
 }
+
+
+
+
+void testNetwork(double weights[][ARRAYSIZE], double values[], 
+	double thresholds[])
+{
+	for (int x=0; x<50; x++){
+		double xpos = x*1.0/50.0;
+		
+		for (int y=0; y<50; y++){
+
+			double ypos = y*1.0/50.0 ;
+
+			values[1]=xpos;
+			values[2]=ypos;
+
+			double eval = 0.5*(sin(PI*xpos) + sin(PI*ypos));
+			forwardPass(weights,values,thresholds);
+			printf("%f %f %f %f\n", xpos, ypos,eval, values[NUMNODES] );
+
+		}
+	}
+}
+
+
 
 
 double sigmoidForward(double value)
@@ -274,7 +324,7 @@ double sigmoidForward(double value)
 
 double sigmoidBackward(double value)
 {
-	return value*(1-value);
+	return value*(1.0-value);
 }
 
 
